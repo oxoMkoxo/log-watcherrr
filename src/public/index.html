@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SSE Log Viewer</title>
+  <style>
+    body { background: #000; color: #0f0; font-family: monospace; padding: 1rem; }
+    #log { white-space: pre-wrap; max-height: 90vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <h2>Live Log Viewer (SSE)</h2>
+  <div id="log"></div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const source = new EventSource('/events');
+
+    source.onmessage = (event) => {
+      logEl.textContent += event.data + '\n';
+      // logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    source.onerror = (err) => {
+      logEl.textContent += '\n❌ Connection lost. Reconnecting...\n';
+    };
+  </script>
+</body>
+</html>
