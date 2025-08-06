@@ -43,30 +43,39 @@ const server = http.createServer((req, res) => {
 });
 
 // 🔁 Watch file and stream only new content
-fs.watchFile(filePath, { interval: 500 }, (_, curr) => {
-  if (curr.size > lastSize) {
+let buffer = '';
+fs.watchFile(filePath, { interval: 500 }, (curr, prev) => {
+  if (curr.size > prev.size) {
     const stream = fs.createReadStream(filePath, {
-      start: lastSize,
+      start: prev.size,
       end: curr.size,
       encoding: 'utf8'
     });
 
-    let chunk = '';
+    let chunk = buffer + '';
 
-    stream.on('data', data => chunk += data);
-    stream.on('end', () => {
-      const lines = chunk.split(/\r?\n/).filter(line => line.trim());
-      lines.forEach(line => {
-        const cleanLine = line.replace(/[\r\n]+/g, '').trim();
-        const message = `data: ${cleanLine}\n\n`;
-        clients.forEach(client => {
-          client.write(message);
-          // client.flush?.(); // optional flush for older browsers
-        });
+    stream.on('data', (data) => {
+      // buffer += data;
+
+      const lines = data.split('\n');
+      lines.pop(); // Save incomplete line for next round
+
+      console.log('🔄 New lines detected:');
+      lines.forEach((line, idx) => {
+        const cleanLine = line.trim();
+        if (cleanLine.length > 0) {
+          const message = `data: ${cleanLine}\n\n`;
+          clients.forEach(client => {
+            client.write(message);
+            // client.flush?.(); // optional flush for older browsers
+          });
+        }
       });
     });
 
-    lastSize = curr.size;
+    stream.on('end', () => {
+      // lastSize = curr.size;
+    });
   }
 });
 
